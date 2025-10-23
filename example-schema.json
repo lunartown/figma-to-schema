@@ -1,0 +1,229 @@
+{
+  "title": "User API Response",
+  "type": "object",
+  "description": "Complete user profile with nested structures",
+  "required": ["id", "email", "profile", "permissions"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique user identifier",
+      "examples": ["usr_123abc"]
+    },
+    "email": {
+      "type": "string",
+      "description": "User email address",
+      "examples": ["user@example.com"]
+    },
+    "username": {
+      "type": "string",
+      "description": "Display username",
+      "default": "anonymous",
+      "examples": ["johndoe"]
+    },
+    "profile": {
+      "type": "object",
+      "description": "User profile information",
+      "required": ["firstName", "lastName", "address"],
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "description": "User first name",
+          "examples": ["John"]
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User last name",
+          "examples": ["Doe"]
+        },
+        "age": {
+          "type": "number",
+          "description": "User age",
+          "default": 18,
+          "examples": [30]
+        },
+        "bio": {
+          "type": "string",
+          "description": "User biography",
+          "examples": ["Software engineer from Seoul"]
+        },
+        "address": {
+          "type": "object",
+          "description": "User address details",
+          "required": ["city", "country"],
+          "properties": {
+            "street": {
+              "type": "string",
+              "description": "Street address",
+              "examples": ["123 Main St"]
+            },
+            "city": {
+              "type": "string",
+              "description": "City name",
+              "examples": ["Seoul"]
+            },
+            "state": {
+              "type": "string",
+              "description": "State or province",
+              "examples": ["Seoul"]
+            },
+            "country": {
+              "type": "string",
+              "description": "Country code",
+              "default": "KR",
+              "examples": ["KR"]
+            },
+            "postalCode": {
+              "type": "string",
+              "description": "Postal code",
+              "examples": ["12345"]
+            }
+          }
+        },
+        "socialLinks": {
+          "type": "object",
+          "description": "Social media links",
+          "properties": {
+            "twitter": {
+              "type": "string",
+              "description": "Twitter handle",
+              "examples": ["@johndoe"]
+            },
+            "github": {
+              "type": "string",
+              "description": "GitHub username",
+              "examples": ["johndoe"]
+            },
+            "linkedin": {
+              "type": "string",
+              "description": "LinkedIn profile URL",
+              "examples": ["https://linkedin.com/in/johndoe"]
+            }
+          }
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "description": "User permission list",
+      "items": {
+        "type": "object",
+        "required": ["resource", "actions"],
+        "properties": {
+          "resource": {
+            "type": "string",
+            "description": "Resource identifier",
+            "examples": ["users"]
+          },
+          "actions": {
+            "type": "array",
+            "description": "Allowed actions",
+            "items": {
+              "type": "string",
+              "examples": ["read", "write", "delete"]
+            }
+          },
+          "scope": {
+            "type": "string",
+            "description": "Permission scope",
+            "default": "own",
+            "examples": ["own", "team", "global"]
+          }
+        }
+      }
+    },
+    "teams": {
+      "type": "array",
+      "description": "Teams user belongs to",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "role"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Team ID",
+            "examples": ["team_123"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Team name",
+            "examples": ["Engineering"]
+          },
+          "role": {
+            "type": "string",
+            "description": "User role in team",
+            "default": "member",
+            "examples": ["member", "admin", "owner"]
+          },
+          "joinedAt": {
+            "type": "string",
+            "description": "Join timestamp",
+            "examples": ["2024-01-01T00:00:00Z"]
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "description": "Account creation timestamp",
+          "examples": ["2024-01-01T00:00:00Z"]
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "examples": ["2024-03-15T12:30:00Z"]
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Last login timestamp",
+          "examples": ["2024-03-15T09:00:00Z"]
+        },
+        "preferences": {
+          "type": "object",
+          "description": "User preferences",
+          "properties": {
+            "theme": {
+              "type": "string",
+              "description": "UI theme preference",
+              "default": "light",
+              "examples": ["dark", "light"]
+            },
+            "language": {
+              "type": "string",
+              "description": "Preferred language",
+              "default": "en",
+              "examples": ["ko", "en"]
+            },
+            "notifications": {
+              "type": "object",
+              "description": "Notification settings",
+              "properties": {
+                "email": {
+                  "type": "boolean",
+                  "description": "Email notifications enabled",
+                  "default": true,
+                  "examples": [true]
+                },
+                "push": {
+                  "type": "boolean",
+                  "description": "Push notifications enabled",
+                  "default": false,
+                  "examples": [false]
+                },
+                "sms": {
+                  "type": "boolean",
+                  "description": "SMS notifications enabled",
+                  "default": false,
+                  "examples": [false]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

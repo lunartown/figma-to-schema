@@ -1,0 +1,11 @@
+{
+  "name": "Figma to JSON Schema",
+  "id": "figma-to-json-schema",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
