@@ -332,9 +332,9 @@ function extractText(node: SceneNode): string | null {
 }
 
 /**
- * 페이지에서 모든 테이블 프레임 찾기
+ * 페이지 또는 컨테이너에서 모든 테이블 프레임 찾기
  */
-export function findAllTableFrames(page: PageNode): TableFrame[] {
+export function findAllTableFrames(container: PageNode | FrameNode | SectionNode): TableFrame[] {
   const tables: TableFrame[] = [];
 
   function traverse(node: BaseNode) {
@@ -352,7 +352,7 @@ export function findAllTableFrames(page: PageNode): TableFrame[] {
     }
   }
 
-  traverse(page);
+  traverse(container);
 
   return tables;
 }
