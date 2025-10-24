@@ -298,3 +298,29 @@ body {
 .close-button:hover {
   background: #f5f5f5;
 }
+
+.live-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  gap: 12px;
+}
+
+.live-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.live-editor-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.live-editor-content {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import LiveEditor from './LiveEditor';
 
-type Mode = 'figma-to-schema' | 'schema-to-figma';
+type Mode = 'figma-to-schema' | 'schema-to-figma' | 'live-editor';
 type Format = 'json-schema' | 'domain-model' | 'sql-ddl';
 type DomainModelLang = 'typescript' | 'java';
 type SqlDialect = 'mysql' | 'postgres' | 'oracle';
@@ -257,6 +258,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [includeComments, setIncludeComments] = useState(true);
   const [useSampleSchema, setUseSampleSchema] = useState(false);
+  const [liveEditorCode, setLiveEditorCode] = useState<string>('');
+  const [liveEditorLang, setLiveEditorLang] = useState<'typescript' | 'java' | 'json' | 'yaml'>('typescript');
 
   useEffect(() => {
     console.log('App useEffect: Setting up message listener');
@@ -286,6 +289,11 @@ function App() {
         case 'tables-found':
           alert(`${msg.count}개의 테이블을 찾았습니다.`);
           break;
+
+        // live-editor-sync는 제거 - 단방향 동기화만 지원 (JSON → Figma)
+        // case 'live-editor-sync':
+        //   setLiveEditorCode(msg.code);
+        //   break;
       }
     };
   }, []);
@@ -474,7 +482,63 @@ function App() {
 
       {error && <div className="error">{error}</div>}
 
-      {mode === 'figma-to-schema' ? (
+      {mode === 'live-editor' ? (
+        <div className="live-editor-container">
+          <div className="live-editor-header">
+            <h2>Live Editor</h2>
+            <button
+              onClick={() => {
+                setMode('figma-to-schema');
+                // 플러그인에 Live Editor 모드 종료 알림
+                parent.postMessage(
+                  {
+                    pluginMessage: {
+                      type: 'live-editor-mode-exit',
+                    },
+                  },
+                  '*'
+                );
+              }}
+              style={{
+                background: '#6b7280',
+                color: 'white',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Back
+            </button>
+          </div>
+          <div className="live-editor-content">
+            <LiveEditor
+              initialCode={liveEditorCode}
+              language={liveEditorLang}
+              onCodeChange={(code) => {
+                console.log('[UI] Code changed, length:', code.length);
+                console.log('[UI] Language:', liveEditorLang);
+                console.log('[UI] Sending live-editor-update message to plugin');
+
+                // 모든 파싱은 플러그인 코드에서 수행
+                // UI에서는 단순히 코드 문자열만 전송
+                parent.postMessage(
+                  {
+                    pluginMessage: {
+                      type: 'live-editor-update',
+                      code,
+                      language: liveEditorLang,
+                    },
+                  },
+                  '*'
+                );
+
+                console.log('[UI] Message sent');
+              }}
+            />
+          </div>
+        </div>
+      ) : mode === 'figma-to-schema' ? (
         <div className="section">
           <h2>Generate Schema</h2>
 
@@ -623,6 +687,39 @@ function App() {
                 <div className="result-actions">
                   <button onClick={handleCopyToClipboard}>Copy</button>
                   <button onClick={handleDownload}>Download</button>
+                  {/* Live Edit는 JSON Schema (JSON/YAML)만 지원 */}
+                  {format === 'json-schema' && (
+                    <button
+                      onClick={() => {
+                        setLiveEditorCode(result);
+                        const lang = schemaFormat === 'yaml' ? 'yaml' : 'json';
+                        setLiveEditorLang(lang);
+                        setMode('live-editor');
+
+                        // 플러그인에 Live Editor 모드 진입 알림
+                        parent.postMessage(
+                          {
+                            pluginMessage: {
+                              type: 'live-editor-mode-enter',
+                              format: lang,
+                            },
+                          },
+                          '*'
+                        );
+                      }}
+                      style={{
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      title="Live edit JSON Schema - bidirectional sync with Figma tables"
+                    >
+                      Live Edit
+                    </button>
+                  )}
                 </div>
               </div>
               <pre className="result-preview">{result}</pre>
