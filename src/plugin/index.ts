@@ -739,6 +739,82 @@ async function handleGenerateOpenApi(options: any) {
 }
 
 /**
+ * OpenAPI 스펙에서 JSON Schema 추출
+ */
+function extractSchemaFromOpenAPI(openApiSpec: any): JsonSchema {
+  // OpenAPI의 components.schemas에서 모든 스키마를 병합하거나
+  // 특정 response schema를 사용
+
+  // 1. 먼저 response schema를 찾기
+  const paths = openApiSpec.paths || {};
+  let responseSchema: any = null;
+
+  for (const path in paths) {
+    for (const method in paths[path]) {
+      const operation = paths[path][method];
+      if (operation.responses?.['200']?.content?.['application/json']?.schema) {
+        responseSchema = operation.responses['200'].content['application/json'].schema;
+        break;
+      }
+    }
+    if (responseSchema) break;
+  }
+
+  // 2. components.schemas가 있으면 참조 해결
+  const schemas = openApiSpec.components?.schemas || {};
+
+  // $ref 참조 해결 함수
+  function resolveRef(schema: any, definitions: any): any {
+    if (!schema) return schema;
+
+    if (schema.$ref) {
+      const refPath = schema.$ref.replace('#/components/schemas/', '');
+      const refSchema = definitions[refPath];
+      return refSchema ? resolveRef(refSchema, definitions) : schema;
+    }
+
+    if (schema.properties) {
+      const resolved: any = { ...schema, properties: {} };
+      for (const key in schema.properties) {
+        resolved.properties[key] = resolveRef(schema.properties[key], definitions);
+      }
+      return resolved;
+    }
+
+    if (schema.items) {
+      return { ...schema, items: resolveRef(schema.items, definitions) };
+    }
+
+    return schema;
+  }
+
+  // response schema가 있으면 해당 스키마 사용
+  if (responseSchema) {
+    const resolved = resolveRef(responseSchema, schemas);
+    // title이 없으면 API 이름 사용
+    if (!resolved.title) {
+      resolved.title = openApiSpec.info?.title || 'API Response';
+    }
+    return resolved;
+  }
+
+  // response schema가 없으면 components.schemas를 하나의 object로 병합
+  if (Object.keys(schemas).length > 0) {
+    const firstSchemaName = Object.keys(schemas)[0];
+    const firstSchema = schemas[firstSchemaName];
+    const resolved = resolveRef(firstSchema, schemas);
+
+    if (!resolved.title) {
+      resolved.title = firstSchemaName;
+    }
+
+    return resolved;
+  }
+
+  throw new Error('No valid schema found in OpenAPI specification');
+}
+
+/**
  * JSON Schema로부터 테이블 생성
  */
 async function handleImportSchema(schemaText: string, options: any) {
@@ -748,8 +824,19 @@ async function handleImportSchema(schemaText: string, options: any) {
     console.log('First 100 chars:', schemaText.substring(0, 100));
 
     // JSON 파싱
-    const schema: JsonSchema = JSON.parse(schemaText);
-    console.log('Parsed schema:', schema);
+    let parsedData = JSON.parse(schemaText);
+    console.log('Parsed data:', parsedData);
+
+    // OpenAPI 스펙인지 확인
+    let schema: JsonSchema;
+    if (parsedData.openapi || parsedData.swagger) {
+      console.log('Detected OpenAPI specification');
+      schema = extractSchemaFromOpenAPI(parsedData);
+      console.log('Extracted schema from OpenAPI:', schema);
+    } else {
+      schema = parsedData as JsonSchema;
+      console.log('Using as JSON Schema:', schema);
+    }
 
     // 테이블 생성
     const tables = generateTablesFromSchema(schema, {

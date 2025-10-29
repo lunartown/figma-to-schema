@@ -290,13 +290,13 @@ function layoutChildren(
 
   if (children.length === 0) return;
 
-  // 자식 테이블의 x 좌표
-  const childX = parentTable.position.x + parentTable.size.width + horizontalGap;
-
   // 각 자식 테이블 배치
   let nextAvailableY = parentTable.position.y;
 
   for (const childTable of children) {
+    // 자식 테이블의 x 좌표를 해당 테이블의 depth 기반으로 계산
+    const baseWidth = DEFAULT_TABLE_CONFIG.tableWidth;
+    const childX = baseWidth * childTable.depth + horizontalGap * childTable.depth;
     // 부모 테이블에서 이 자식과 연결된 row 찾기
     const parentRow = parentTable.rows.find(r => r.childTableId === childTable.id);
 

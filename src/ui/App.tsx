@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LiveEditor from './LiveEditor';
+import * as yaml from 'js-yaml';
 
 type Mode = 'figma-to-schema' | 'schema-to-figma' | 'live-editor';
 type Format = 'json-schema' | 'domain-model' | 'sql-ddl';
@@ -390,11 +391,23 @@ function App() {
       return;
     }
 
+    let parsedSchema: any;
+    let schemaString: string;
+
     try {
-      JSON.parse(inputSchema);
-    } catch (e) {
-      setError('Invalid JSON format.');
-      return;
+      // JSON 형식 시도
+      parsedSchema = JSON.parse(inputSchema);
+      schemaString = inputSchema;
+    } catch (jsonError) {
+      // JSON 파싱 실패시 YAML 시도
+      try {
+        parsedSchema = yaml.load(inputSchema);
+        // YAML을 JSON 문자열로 변환해서 플러그인에 전달
+        schemaString = JSON.stringify(parsedSchema, null, 2);
+      } catch (yamlError) {
+        setError('Invalid JSON or YAML format. Please check your input.');
+        return;
+      }
     }
 
     setError('');
@@ -404,7 +417,7 @@ function App() {
       {
         pluginMessage: {
           type: 'import-schema',
-          schema: inputSchema,
+          schema: schemaString,
           options: {},
         },
       },
@@ -751,7 +764,7 @@ function App() {
 
           <textarea
             className="schema-input"
-            placeholder="Paste JSON Schema here..."
+            placeholder="Paste JSON Schema or YAML here..."
             value={inputSchema}
             onChange={(e) => setInputSchema(e.target.value)}
             rows={15}

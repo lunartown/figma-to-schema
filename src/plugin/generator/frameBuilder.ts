@@ -8,7 +8,7 @@ import { rgbToPaint } from '../utils/colorUtils';
 /**
  * 테이블 프레임을 피그마 Frame 노드로 생성
  */
-export async function createTableFrameNode(table: TableFrame): Promise<FrameNode> {
+function createTableFrameNode(table: TableFrame): FrameNode {
   const frame = figma.createFrame();
   frame.name = table.title || 'Table';
   frame.x = table.position.x;
@@ -33,19 +33,19 @@ export async function createTableFrameNode(table: TableFrame): Promise<FrameNode
 
   // 제목 생성
   if (table.title) {
-    const titleNode = await createTitleNode(table.title, table.size.width);
+    const titleNode = createTitleNode(table.title, table.size.width);
     frame.appendChild(titleNode);
     currentY += titleNode.height;
   }
 
   // 컬럼 헤더 생성
-  const headerRow = await createHeaderRow(table.columns, table.size.width);
+  const headerRow = createHeaderRow(table.columns, table.size.width);
   frame.appendChild(headerRow);
   currentY += headerRow.height;
 
   // 데이터 행 생성
   for (const row of table.rows) {
-    const rowNode = await createDataRow(row, table.columns, table.size.width);
+    const rowNode = createDataRow(row, table.columns, table.size.width);
     frame.appendChild(rowNode);
     currentY += rowNode.height;
   }
@@ -56,7 +56,7 @@ export async function createTableFrameNode(table: TableFrame): Promise<FrameNode
 /**
  * 제목 노드 생성
  */
-async function createTitleNode(title: string, width: number): Promise<FrameNode> {
+function createTitleNode(title: string, width: number): FrameNode {
   const frame = figma.createFrame();
   frame.name = 'Title';
   frame.resize(width, 36);
@@ -67,10 +67,11 @@ async function createTitleNode(title: string, width: number): Promise<FrameNode>
   frame.strokes = [];
 
   const text = figma.createText();
-  await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
+  // 폰트는 이미 createMultipleTableFrames에서 로드됨
   text.fontName = { family: 'Inter', style: 'Semi Bold' };
   text.fontSize = 12;
-  text.characters = title;
+  // Figma는 빈 문자열을 허용하지 않으므로 공백 문자 사용
+  text.characters = title || 'Untitled';
   text.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }]; // 흰색
   text.textAlignHorizontal = 'CENTER';
   text.textAlignVertical = 'CENTER';
@@ -86,10 +87,10 @@ async function createTitleNode(title: string, width: number): Promise<FrameNode>
 /**
  * 헤더 행 생성
  */
-async function createHeaderRow(
+function createHeaderRow(
   columns: { name: string; width: number }[],
   totalWidth: number
-): Promise<FrameNode> {
+): FrameNode {
   const rowFrame = figma.createFrame();
   rowFrame.name = 'Header Row';
   rowFrame.resize(totalWidth, DEFAULT_TABLE_CONFIG.rowHeight);
@@ -111,7 +112,7 @@ async function createHeaderRow(
 
   for (const column of columns) {
     const width = DEFAULT_COLUMN_WIDTHS[column.name] || 120;
-    const cell = await createCellNode(column.name, width, true);
+    const cell = createCellNode(column.name, width, true);
     rowFrame.appendChild(cell);
   }
 
@@ -121,11 +122,11 @@ async function createHeaderRow(
 /**
  * 데이터 행 생성
  */
-async function createDataRow(
+function createDataRow(
   row: TableRow,
   columns: { name: string }[],
   totalWidth: number
-): Promise<FrameNode> {
+): FrameNode {
   const rowFrame = figma.createFrame();
   rowFrame.name = `Row: ${row.field}`;
   rowFrame.resize(totalWidth, DEFAULT_TABLE_CONFIG.rowHeight);
@@ -183,7 +184,7 @@ async function createDataRow(
     }
 
     const width = DEFAULT_COLUMN_WIDTHS[column.name] || 120;
-    const cell = await createCellNode(value, width, false);
+    const cell = createCellNode(value, width, false);
     rowFrame.appendChild(cell);
   }
 
@@ -193,11 +194,11 @@ async function createDataRow(
 /**
  * 셀 노드 생성
  */
-async function createCellNode(
+function createCellNode(
   text: string,
   width: number,
   isHeader: boolean
-): Promise<FrameNode> {
+): FrameNode {
   const cellFrame = figma.createFrame();
   cellFrame.name = 'Cell';
   cellFrame.resize(width, DEFAULT_TABLE_CONFIG.rowHeight);
@@ -213,20 +214,20 @@ async function createCellNode(
 
   const textNode = figma.createText();
 
+  // 폰트는 이미 createMultipleTableFrames에서 로드됨
   if (isHeader) {
     // 헤더: Semi Bold
-    await figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' });
     textNode.fontName = { family: 'Inter', style: 'Semi Bold' };
   } else {
     // 데이터: Regular
-    await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
     textNode.fontName = { family: 'Inter', style: 'Regular' };
   }
 
   textNode.fontSize = 12;
   textNode.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }]; // 검정색
   textNode.lineHeight = { value: 1.3, unit: 'PERCENT' };
-  textNode.characters = text;
+  // Figma는 빈 문자열을 허용하지 않으므로 공백 문자 사용
+  textNode.characters = text || ' ';
   textNode.x = 12;
   textNode.y = 10;
   textNode.resize(width - 24, DEFAULT_TABLE_CONFIG.rowHeight - 20);
@@ -242,10 +243,17 @@ async function createCellNode(
  * 여러 테이블을 한번에 생성
  */
 export async function createMultipleTableFrames(tables: TableFrame[]): Promise<FrameNode[]> {
+  // 폰트를 미리 한 번만 로드 (성능 최적화)
+  await Promise.all([
+    figma.loadFontAsync({ family: 'Inter', style: 'Semi Bold' }),
+    figma.loadFontAsync({ family: 'Inter', style: 'Regular' })
+  ]);
+
   const frames: FrameNode[] = [];
 
+  // 동기 처리로 변경하여 성능 향상
   for (const table of tables) {
-    const frame = await createTableFrameNode(table);
+    const frame = createTableFrameNode(table);
     frames.push(frame);
   }
 
